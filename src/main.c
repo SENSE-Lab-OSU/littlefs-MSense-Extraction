@@ -2,10 +2,25 @@
 #include <dokan/dokan.h>
 #include <lfs.h>
 #include <stdio.h>
-
+#include "extraction.h"
 #include "operations.h"
 #include "lfs_bind.h"
 #include "context.h"
+
+
+#define USE_DOKANY = 1
+
+
+
+#ifdef USE_DOKANY
+#include "dolkany_viewer.h"
+#endif
+
+bool enable_browsing = true;
+
+
+
+
 
 int __cdecl wmain(ULONG argc, PWCHAR argv[])
 {
@@ -16,6 +31,8 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
     uint32_t unit_size = 512;
     uint32_t block_size = 8192;
     uint8_t format = 0;
+    const char* folder;
+
 
     for (ULONG i = 1; i < argc; i++)
     {
@@ -56,12 +73,20 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
             }
         }
     }
+    
 
     if (mount_point == NULL || media == NULL)
     {
         fprintf(stderr, "Usage: <mount point> <media>\n");
         fprintf(stderr, "   e.g. F: PhysicalDrive2\n");
-        return 1;
+        printf("no input found, using default MotionSenseDevice G:....\n");
+        PWCHAR mount_string = L"Y:";
+        PWCHAR media_string = L"G:";
+        mount_point = (LPCWSTR)mount_string;
+        media = (LPCWSTR)media_string;
+        block_size = 4096;
+        unit_size = 512;
+        folder = "H:/test_folder";
     }
 
     char media_path[255];
@@ -107,13 +132,13 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 
     lfs_t lfs;
 
-    dokany_context.lfs = &lfs;
-    dokany_context.media_handle = media_handle;
-    dokany_context.unit_size = unit_size;
+    fs_context.lfs = &lfs;
+    fs_context.media_handle = media_handle;
+    fs_context.unit_size = unit_size;
 
     struct lfs_config lfs_config = {
         // context
-        &dokany_context,
+        &fs_context,
         // read
         lfs_bind_read,
         // prog
@@ -159,95 +184,30 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
             return lfs_format_result;
         }
     }
-
+    printf("mounting lfs...\n");
     int lfs_mount_result = lfs_mount(&lfs, &lfs_config);
     if (lfs_mount_result != LFS_ERR_OK)
     {
         fprintf(stderr, "Failed to mount littlefs %d\n", lfs_mount_result);
         return lfs_mount_result;
     }
+    printf("file system mounted!\n");
+    
+    
+    copy_all_files3(&lfs, folder);
+    //file_create_test(&lfs);
 
-    DOKAN_OPTIONS dokan_options = {
-        // Version
-        131,
-        // ThreadCount
-        1,
-        // Options
-        debug_options,
-        // GlobalContext
-        (ULONG64)&dokany_context,
-        // MountPoint
-        mount_point,
-        // UNCName
-        NULL,
-        // Timeout
-        100,
-        // AllocationUnitSize
-        unit_size,
-        // SectorSize
-        block_size
-    };
 
-    DOKAN_OPERATIONS dokan_operations = {
-        LFS_ZwCreateFile,
-        LFS_Cleanup,
-        LFS_CloseFile,
-        LFS_ReadFile,
-        LFS_WriteFile,
-        LFS_FlushFileBuffers,
-        LFS_GetFileInformation,
-        LFS_FindFiles,
-        LFS_FindFilesWithPattern,
-        LFS_SetFileAttributes,
-        LFS_SetFileTime,
-        LFS_DeleteFile,
-        LFS_DeleteDirectory,
-        LFS_MoveFile,
-        LFS_SetEndOfFile,
-        LFS_SetAllocationSize,
-        LFS_LockFile,
-        LFS_UnlockFile,
-        LFS_GetDiskFreeSpace,
-        LFS_GetVolumeInformation,
-        LFS_Mounted,
-        LFS_Unmounted,
-        LFS_GetFileSecurity,
-        LFS_SetFileSecurity,
-        LFS_FindStreams
-    };
 
-    int status = DokanMain(&dokan_options, &dokan_operations);
-    switch (status) {
-        case DOKAN_SUCCESS:
-            fprintf(stderr, "Success\n");
-            break;
-        case DOKAN_ERROR:
-            fprintf(stderr, "Error\n");
-            break;
-        case DOKAN_DRIVE_LETTER_ERROR:
-            fprintf(stderr, "Bad Drive letter\n");
-            break;
-        case DOKAN_DRIVER_INSTALL_ERROR:
-            fprintf(stderr, "Can't install driver\n");
-            break;
-        case DOKAN_START_ERROR:
-            fprintf(stderr, "Driver something wrong\n");
-            break;
-        case DOKAN_MOUNT_ERROR:
-            fprintf(stderr, "Can't assign a drive letter\n");
-            break;
-        case DOKAN_MOUNT_POINT_ERROR:
-            fprintf(stderr, "Mount point error\n");
-            break;
-        case DOKAN_VERSION_ERROR:
-            fprintf(stderr, "Version error\n");
-            break;
-        default:
-            fprintf(stderr, "Unknown error: %d\n", status);
-            break;
+    #ifdef USE_DOKANY
+    
+    if (enable_browsing) {
+        dokany_activate(unit_size, block_size, debug_options, mount_point);
     }
-
+    #endif
+    
+    printf("unmounting...\n");
     lfs_unmount(&lfs);
 
-	return status;
+	
 }

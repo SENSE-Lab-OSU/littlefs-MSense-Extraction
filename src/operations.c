@@ -48,7 +48,7 @@ NTSTATUS LFS_ZwCreateFile (LPCWSTR FileName,
 
     {
         struct lfs_info file_info;
-        if (lfs_stat(dokany_context.lfs, fixed_file_name, &file_info) == LFS_ERR_OK)
+        if (lfs_stat(fs_context.lfs, fixed_file_name, &file_info) == LFS_ERR_OK)
         {
             is_dir = file_info.type & LFS_TYPE_DIR;
         }
@@ -58,7 +58,7 @@ NTSTATUS LFS_ZwCreateFile (LPCWSTR FileName,
 
             if (is_dir)
             {
-                if (lfs_mkdir(dokany_context.lfs, fixed_file_name) != LFS_ERR_OK)
+                if (lfs_mkdir(fs_context.lfs, fixed_file_name) != LFS_ERR_OK)
                 {
                     return STATUS_UNSUCCESSFUL;
                 }
@@ -72,7 +72,7 @@ NTSTATUS LFS_ZwCreateFile (LPCWSTR FileName,
     if (is_dir)
     {
         f_d->dir = calloc(1, sizeof(lfs_dir_t));
-        if (lfs_dir_open(dokany_context.lfs, f_d->dir, fixed_file_name) != LFS_ERR_OK)
+        if (lfs_dir_open(fs_context.lfs, f_d->dir, fixed_file_name) != LFS_ERR_OK)
         {
             DokanFileInfo->IsDirectory = TRUE;
             free(f_d->dir);
@@ -125,7 +125,7 @@ NTSTATUS LFS_ZwCreateFile (LPCWSTR FileName,
     }
 
     f_d->file = calloc(1, sizeof(lfs_file_t));
-    int open_err = lfs_file_open(dokany_context.lfs, f_d->file, fixed_file_name, open_flags);
+    int open_err = lfs_file_open(fs_context.lfs, f_d->file, fixed_file_name, open_flags);
     if (open_err != LFS_ERR_OK)
     {
         free(f_d->file);
@@ -162,19 +162,19 @@ void LFS_CloseFile (LPCWSTR FileName,
     lfs_file_or_dir* f_d = (lfs_file_or_dir*)DokanFileInfo->Context;
     if (f_d->file)
     {
-        lfs_file_close(dokany_context.lfs, f_d->file);
+        lfs_file_close(fs_context.lfs, f_d->file);
         free(f_d->file);
 
         if (DokanFileInfo->DeleteOnClose == TRUE)
         {
             char fixed_path[255];
             fix_path(FileName, fixed_path);
-            lfs_remove(dokany_context.lfs, fixed_path);
+            lfs_remove(fs_context.lfs, fixed_path);
         }
     }
     if (f_d->dir)
     {
-        lfs_dir_close(dokany_context.lfs, f_d->dir);
+        lfs_dir_close(fs_context.lfs, f_d->dir);
         free(f_d->dir);
 
 
@@ -182,7 +182,7 @@ void LFS_CloseFile (LPCWSTR FileName,
         {
             char fixed_path[255];
             fix_path(FileName, fixed_path);
-            lfs_remove(dokany_context.lfs, fixed_path);
+            lfs_remove(fs_context.lfs, fixed_path);
         }
     }
     free(f_d);
@@ -198,8 +198,8 @@ NTSTATUS LFS_ReadFile (LPCWSTR FileName,
 {
     lfs_file_or_dir* f_d = (lfs_file_or_dir*)DokanFileInfo->Context;
 
-    lfs_file_seek(dokany_context.lfs, f_d->file, Offset, LFS_SEEK_SET);
-    *ReadLength = lfs_file_read(dokany_context.lfs, f_d->file, Buffer, BufferLength);
+    lfs_file_seek(fs_context.lfs, f_d->file, Offset, LFS_SEEK_SET);
+    *ReadLength = lfs_file_read(fs_context.lfs, f_d->file, Buffer, BufferLength);
     return STATUS_SUCCESS;
 }
 
@@ -213,8 +213,8 @@ NTSTATUS LFS_WriteFile (LPCWSTR FileName,
 {
     lfs_file_or_dir* f_d = (lfs_file_or_dir*)DokanFileInfo->Context;
 
-    lfs_file_seek(dokany_context.lfs, f_d->file, Offset, LFS_SEEK_SET);
-    *NumberOfBytesWritten = lfs_file_write(dokany_context.lfs, f_d->file, Buffer, NumberOfBytesToWrite);
+    lfs_file_seek(fs_context.lfs, f_d->file, Offset, LFS_SEEK_SET);
+    *NumberOfBytesWritten = lfs_file_write(fs_context.lfs, f_d->file, Buffer, NumberOfBytesToWrite);
     return STATUS_SUCCESS;
 }
 
@@ -223,7 +223,7 @@ NTSTATUS LFS_FlushFileBuffers (LPCWSTR FileName,
     PDOKAN_FILE_INFO DokanFileInfo)
 {
     lfs_file_or_dir* f_d = (lfs_file_or_dir*)DokanFileInfo->Context;
-    lfs_file_sync(dokany_context.lfs, f_d->file);
+    lfs_file_sync(fs_context.lfs, f_d->file);
     return STATUS_SUCCESS;
 }
 
@@ -245,7 +245,7 @@ NTSTATUS LFS_GetFileInformation (LPCWSTR FileName,
     {
         Buffer->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
         Buffer->nFileSizeHigh = 0;
-        Buffer->nFileSizeLow = lfs_file_size(dokany_context.lfs, f_d->file);
+        Buffer->nFileSizeLow = lfs_file_size(fs_context.lfs, f_d->file);
     }
 
     return STATUS_SUCCESS;
@@ -260,8 +260,8 @@ NTSTATUS LFS_FindFiles (LPCWSTR FileName,
     lfs_file_or_dir* f_d = (lfs_file_or_dir*)DokanFileInfo->Context;
 
     struct lfs_info info;
-    lfs_dir_rewind(dokany_context.lfs, f_d->dir);
-    while (lfs_dir_read(dokany_context.lfs, f_d->dir, &info))
+    lfs_dir_rewind(fs_context.lfs, f_d->dir);
+    while (lfs_dir_read(fs_context.lfs, f_d->dir, &info))
     {
         WIN32_FIND_DATAW found;
 
@@ -327,13 +327,13 @@ NTSTATUS LFS_DeleteDirectory (LPCWSTR FileName,
     char fixed_path[255];
     fix_path(FileName, fixed_path);
     lfs_dir_t dir;
-    if (lfs_dir_open(dokany_context.lfs, &dir, fixed_path) != LFS_ERR_OK)
+    if (lfs_dir_open(fs_context.lfs, &dir, fixed_path) != LFS_ERR_OK)
     {
         return STATUS_OBJECT_PATH_NOT_FOUND;
     }
 
     struct lfs_info info;
-    while (lfs_dir_read(dokany_context.lfs, &dir, &info))
+    while (lfs_dir_read(fs_context.lfs, &dir, &info))
     {
         if (strcmp(info.name, ".") == 0)
         {
@@ -345,11 +345,11 @@ NTSTATUS LFS_DeleteDirectory (LPCWSTR FileName,
             continue;
         }
 
-        lfs_dir_close(dokany_context.lfs, &dir);
+        lfs_dir_close(fs_context.lfs, &dir);
         return STATUS_DIRECTORY_NOT_EMPTY;
     }
 
-    lfs_dir_close(dokany_context.lfs, &dir);
+    lfs_dir_close(fs_context.lfs, &dir);
 
     DokanFileInfo->DeleteOnClose = TRUE;
 
@@ -366,7 +366,7 @@ NTSTATUS LFS_MoveFile (LPCWSTR FileName,
     fix_path(FileName, fixed_from);
     fix_path(NewFileName, fixed_to);
 
-    return lfs_rename(dokany_context.lfs, fixed_from, fixed_to) == LFS_ERR_OK ? STATUS_SUCCESS : STATUS_UNSUCCESSFUL;
+    return lfs_rename(fs_context.lfs, fixed_from, fixed_to) == LFS_ERR_OK ? STATUS_SUCCESS : STATUS_UNSUCCESSFUL;
 }
 
 
@@ -408,8 +408,8 @@ NTSTATUS LFS_GetDiskFreeSpace (PULONGLONG FreeBytesAvailable,
     PULONGLONG TotalNumberOfFreeBytes,
     PDOKAN_FILE_INFO DokanFileInfo)
 {
-    uint32_t total_size = dokany_context.lfs->cfg->block_size * dokany_context.lfs->cfg->block_count;
-    uint32_t used_size = dokany_context.lfs->cfg->block_size * lfs_fs_size(dokany_context.lfs);
+    uint32_t total_size = fs_context.lfs->cfg->block_size * fs_context.lfs->cfg->block_count;
+    uint32_t used_size = fs_context.lfs->cfg->block_size * lfs_fs_size(fs_context.lfs);
     uint32_t free_size = total_size - used_size;
 
     *TotalNumberOfBytes = (ULONGLONG)total_size;
@@ -431,7 +431,7 @@ NTSTATUS LFS_GetVolumeInformation (LPWSTR VolumeNameBuffer,
 {
     wsprintfW(FileSystemNameBuffer, L"littlefs");
     *VolumeSerialNumber = 0;
-    *MaximumComponentLength = dokany_context.lfs->file_max;
+    *MaximumComponentLength = fs_context.lfs->file_max;
 
     return STATUS_SUCCESS;
 }
@@ -458,7 +458,6 @@ NTSTATUS LFS_GetFileSecurity (LPCWSTR FileName,
 {
  return STATUS_NOT_IMPLEMENTED;
 }
-
 
 NTSTATUS LFS_SetFileSecurity (LPCWSTR FileName,
     PSECURITY_INFORMATION SecurityInformation,

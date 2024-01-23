@@ -11,6 +11,6 @@ typedef struct
     uint32_t unit_size;
 } littlefs_dokany_context_t;
 
-extern littlefs_dokany_context_t dokany_context;
+extern littlefs_dokany_context_t fs_context;
 
 #endif //LITTLEFS_DOKANY_CONTEXT_H
