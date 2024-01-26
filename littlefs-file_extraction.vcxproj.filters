@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{a89f5df0-2598-470b-ad4b-c954e0382df3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\context.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\extraction.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lfs_bind.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="littlefs\lfs.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="littlefs\lfs_util.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\context.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="src\extraction.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lfs_bind.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

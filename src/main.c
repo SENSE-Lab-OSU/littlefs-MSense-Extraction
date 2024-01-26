@@ -1,18 +1,17 @@
 
-#include <dokan/dokan.h>
 #include <lfs.h>
 #include <stdio.h>
 #include "extraction.h"
-#include "operations.h"
 #include "lfs_bind.h"
 #include "context.h"
 
 
-#define USE_DOKANY = 1
+//#define USE_DOKANY = 0
 
 
 
 #ifdef USE_DOKANY
+#include <dokan/dokan.h>
 #include "dolkany_viewer.h"
 #endif
 
@@ -31,7 +30,7 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
     uint32_t unit_size = 512;
     uint32_t block_size = 8192;
     uint8_t format = 0;
-    const char* folder;
+    const char* folder = "/test_folder";
 
 
     for (ULONG i = 1; i < argc; i++)
@@ -40,7 +39,6 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 
         if (wcscmp(arg, L"-d") == 0)
         {
-            debug_options |= DOKAN_OPTION_DEBUG | DOKAN_OPTION_STDERR;
         }
         else if (wcscmp(arg, L"--block-size") == 0)
         {
@@ -199,7 +197,7 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
 
 
 
-    #ifdef USE_DOKANY
+    #if USE_DOKANY
     
     if (enable_browsing) {
         dokany_activate(unit_size, block_size, debug_options, mount_point);
