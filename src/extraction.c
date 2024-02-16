@@ -14,6 +14,9 @@
 lfs_t src_fs;
 lfs_t dst_fs;
 
+
+bool sort_data = true;
+
 // A function that copies all files from one file system to another
 int copy_all_files(lfs_t* src, lfs_t* dst) {
     // Create a buffer to store the file data
@@ -184,6 +187,7 @@ int copy_all_files2(lfs_t* src, char* dst_path) {
                 // Write the chunk of data to the destination file
                 DWORD nwrite;
                 BOOL success = WriteFile(dst_handle, buffer, nread, &nwrite, NULL);
+                
                 if (!success || nwrite != nread) {
                     printf("Failed to write destination file %s\n", dst_file);
                     printf("Error code: %d\n", GetLastError());

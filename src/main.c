@@ -30,7 +30,8 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
     uint32_t unit_size = 512;
     uint32_t block_size = 8192;
     uint8_t format = 0;
-    const char* folder = "/test_folder";
+    const char* folder = "extracted_folder";
+    bool args_entered;
 
 
     for (ULONG i = 1; i < argc; i++)
@@ -72,19 +73,47 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
         }
     }
     
-
-    if (mount_point == NULL || media == NULL)
+    #ifdef USE_DOKANY
+    args_entered = mount_point == NULL || media == NULL;
+    #else
+    args_entered = mount_point == NULL;
+    #endif
+    if (args_entered)
     {
         fprintf(stderr, "Usage: <mount point> <media>\n");
         fprintf(stderr, "   e.g. F: PhysicalDrive2\n");
-        printf("no input found, using default MotionSenseDevice G:....\n");
+        printf("no input found, using default MotionSenseDevice....\n");
         PWCHAR mount_string = L"Y:";
-        PWCHAR media_string = L"G:";
+        wchar_t media_string[10] = L"G:";
+        char DeviceStrings[MAX_PATH];
+        char CurrentDevice[MAX_PATH];
+        
+        GetLogicalDriveStringsA(MAX_PATH, DeviceStrings);
+        for (int i = 0; i < 100; i += 4) {
+            if (DeviceStrings[i] != (char)0) {
+                memcpy(CurrentDevice, &DeviceStrings[i], 3);
+                CurrentDevice[3] = '\0';
+                printf("drive found: %s ", CurrentDevice);
+                int DriveType = GetDriveTypeA(CurrentDevice);
+                printf("drive type: %i \n", DriveType);
+                //GetDiskFreeSpaceA()
+                if (DriveType == 2) {
+                    printf("found drive! \n");
+                    CurrentDevice[2] = '\0';
+                    size_t newsize = strlen(CurrentDevice) + 1;
+
+                    mbstowcs(media_string, CurrentDevice, 1);
+                    
+                }
+            }
+        }
+        
+        
         mount_point = (LPCWSTR)mount_string;
         media = (LPCWSTR)media_string;
         block_size = 4096;
         unit_size = 512;
-        folder = "H:/test_folder";
+        
     }
 
     char media_path[255];
@@ -206,6 +235,7 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
     
     printf("unmounting...\n");
     lfs_unmount(&lfs);
-
+    printf("completed file copying!\n");
+    Sleep(8000);
 	
 }
