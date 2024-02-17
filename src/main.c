@@ -89,7 +89,7 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[])
         char CurrentDevice[MAX_PATH];
         
         GetLogicalDriveStringsA(MAX_PATH, DeviceStrings);
-        for (int i = 0; i < 100; i += 4) {
+        for (int i = 0; i < 60; i += 4) {
             if (DeviceStrings[i] != (char)0) {
                 memcpy(CurrentDevice, &DeviceStrings[i], 3);
                 CurrentDevice[3] = '\0';
