@@ -241,7 +241,8 @@ int copy_all_files3(lfs_t* src, char* dst_path) {
         printf("Failed to open source directory\n");
         return err;
     }
-
+    //Currently, windows will be creating this directory in the hard drive root if it was double clicked instead of ran. for now it should be run in the command line.
+    //GetCurrentDirectory()
     CreateDirectory(dst_path, NULL);
     // Loop over all the files in the source directory
     while (true) {
